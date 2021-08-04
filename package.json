@@ -1,0 +1,48 @@
+{
+  "name": "receipt-desktop",
+  "version": "0.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "electron-builder install-app-deps",
+    "rebuild": "electron-rebuild",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win"
+  },
+  "dependencies": {
+    "@thiagoelg/node-printer": "^0.5.5",
+    "axios": "^0.21.1",
+    "base64-arraybuffer": "^0.2.0",
+    "electron-store": "^8.0.0",
+    "pako": "^2.0.4",
+    "ws": "^8.0.0"
+  },
+  "devDependencies": {
+    "electron": "^13.0.1",
+    "electron-builder": "^22.5.1",
+    "electron-rebuild": "^2.3.5"
+  },
+  "build": {
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "identity": null,
+      "target": "dmg"
+    }
+  }
+}
