@@ -63,24 +63,75 @@ const refreshMenu = () => {
         print(
           [
             {
-              type: "line",
-              data: "*",
-            },
-            {
               type: "text",
               data: "${text}",
               props: {
                 size: 2,
-                align: "center",
               },
             },
             {
               type: "line",
               data: "*",
             },
+            {
+              type: "img",
+              data: "https://gw.alicdn.com/imgextra/i3/O1CN01uRz3de23mzWofmPYX_!!6000000007299-2-tps-143-59.png",
+              props: {
+                width: 150,
+              },
+            },
+            {
+              type: "qrcode",
+              data: "https://gw.alicdn.com/imgextra/i3/O1CN01uRz3de23mzWofmPYX_!!6000000007299-2-tps-143-59.png",
+              props: {
+                width: 150,
+              },
+            },
+            {
+              type: "table",
+              data: [
+                {
+                  label: "测试标题",
+                  value: "测试内容",
+                },
+              ],
+              props: {
+                hideHeader: true,
+                header: [
+                  {
+                    dataIndex: "label",
+                    cols: 8,
+                    align: "left",
+                  },
+                  {
+                    dataIndex: "value",
+                    cols: 24,
+                    align: "right",
+                  },
+                ],
+              },
+            },
+            {
+              type: "line",
+              data: "*",
+            },
+            {
+              type: "text",
+              data: "测试结束",
+            },
+            {
+              type: "line",
+              data: "=",
+            },
           ],
           {
             text: "打印测试",
+          },
+          {
+            width: 32,
+            style: {
+              align: "center",
+            },
           }
         );
       },
@@ -123,32 +174,36 @@ const print = async (template, data, options) => {
     return dialog.showMessageBox({
       message: "没有配置打印接口服务器",
     });
-  const response = await axios({
-    url: apiurl,
-    method: "POST",
-    data: {
-      template,
-      data,
-      options,
-    },
-  });
-
-  const { data: resdata } = response;
-  if (resdata.data && resdata.type) {
-    let arraybuffer = base64.decode(resdata.data);
-    if (resdata.type === "gzip") {
-      arraybuffer = pako.ungzip(arraybuffer);
-    }
-    printer.printDirect({
-      printer: defaultPrinter,
-      data: arraybuffer,
-      type: "RAW",
-      success: function (jobID) {
-        console.log("sent to printer with ID: " + jobID);
-      },
-      error: function (err) {
-        console.log(err);
+  try {
+    const response = await axios({
+      url: apiurl,
+      method: "POST",
+      data: {
+        template,
+        data,
+        options,
       },
     });
+
+    const { data: resdata } = response;
+    if (resdata.data && resdata.type) {
+      let arraybuffer = base64.decode(resdata.data);
+      if (resdata.type === "gzip") {
+        arraybuffer = pako.ungzip(arraybuffer);
+      }
+      printer.printDirect({
+        printer: defaultPrinter,
+        data: arraybuffer,
+        type: "RAW",
+        success: function (jobID) {
+          console.log("sent to printer with ID: " + jobID);
+        },
+        error: function (err) {
+          console.log(err);
+        },
+      });
+    }
+  } catch (error) {
+    console.log(error.response);
   }
 };
