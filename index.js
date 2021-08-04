@@ -17,7 +17,8 @@ const store = new Store({ schema });
 
 let tray = null;
 let defaultPrinter;
-
+let printers = printer.getPrinters();
+let status = "等待打印任务...";
 app.whenReady().then(() => {
   const trayIcon = path.join(__dirname, "tray.png");
   tray = new Tray(trayIcon);
@@ -26,115 +27,67 @@ app.whenReady().then(() => {
 });
 
 const refreshMenu = () => {
-  const printers = printer.getPrinters();
+  const openAtLogin = app.getLoginItemSettings().openAtLogin;
+  console.log("load openAtLogin", openAtLogin);
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: "打印机",
-      submenu: [...printers].map((i) => {
-        let checked = false;
-        if (defaultPrinter && defaultPrinter === i.name) {
-          checked = true;
-        }
+      submenu: [
+        ...[...printers].map((i) => {
+          let checked = false;
+          if (defaultPrinter && defaultPrinter === i.name) {
+            checked = true;
+          }
 
-        if (!defaultPrinter && i.isDefault) {
-          checked = true;
-        }
+          if (!defaultPrinter && i.isDefault) {
+            checked = true;
+          }
 
-        return {
-          label: i.name,
-          type: "radio",
-          checked,
+          return {
+            label: i.name,
+            type: "radio",
+            checked,
+            click: () => {
+              defaultPrinter = i.name;
+              refreshMenu();
+            },
+          };
+        }),
+        {
+          type: "separator",
+        },
+        {
+          label: "刷新打印机",
           click: () => {
-            defaultPrinter = i.name;
+            printers = printer.getPrinters();
             refreshMenu();
           },
-        };
-      }),
+        },
+      ],
     },
-    {
-      label: "刷新打印机",
-      click: () => {
-        refreshMenu();
-      },
-    },
+
     {
       label: "测试打印",
       click: () => {
-        print(
-          [
-            {
-              type: "text",
-              data: "${text}",
-              props: {
-                size: 2,
-              },
-            },
-            {
-              type: "line",
-              data: "*",
-            },
-            {
-              type: "img",
-              data: "https://gw.alicdn.com/imgextra/i3/O1CN01uRz3de23mzWofmPYX_!!6000000007299-2-tps-143-59.png",
-              props: {
-                width: 150,
-              },
-            },
-            {
-              type: "qrcode",
-              data: "https://gw.alicdn.com/imgextra/i3/O1CN01uRz3de23mzWofmPYX_!!6000000007299-2-tps-143-59.png",
-              props: {
-                width: 150,
-              },
-            },
-            {
-              type: "table",
-              data: [
-                {
-                  label: "测试标题",
-                  value: "测试内容",
-                },
-              ],
-              props: {
-                hideHeader: true,
-                header: [
-                  {
-                    dataIndex: "label",
-                    cols: 8,
-                    align: "left",
-                  },
-                  {
-                    dataIndex: "value",
-                    cols: 24,
-                    align: "right",
-                  },
-                ],
-              },
-            },
-            {
-              type: "line",
-              data: "*",
-            },
-            {
-              type: "text",
-              data: "测试结束",
-            },
-            {
-              type: "line",
-              data: "=",
-            },
-          ],
-          {
-            text: "打印测试",
-          },
-          {
-            width: 32,
-            style: {
-              align: "center",
-            },
-          }
-        );
+        testPrint();
       },
+    },
+    {
+      label: "开启自动启动",
+      type: "checkbox",
+      checked: openAtLogin,
+      click: (menuItem) => {
+        if (app.isPackaged) {
+          app.setLoginItemSettings({
+            openAtLogin: menuItem.checked,
+          });
+          refreshMenu();
+        }
+      },
+    },
+    {
+      type: "separator",
     },
     {
       label: "退出程序",
@@ -146,6 +99,83 @@ const refreshMenu = () => {
   tray.setContextMenu(contextMenu);
 };
 
+const testPrint = () => {
+  print(
+    [
+      {
+        type: "text",
+        data: "${text}",
+        props: {
+          size: 2,
+        },
+      },
+      {
+        type: "line",
+        data: "*",
+      },
+      {
+        type: "img",
+        data: "https://www.w3school.com.cn/i/eg_tulip.jpg",
+        props: {
+          width: 150,
+        },
+      },
+      {
+        type: "qrcode",
+        data: "测试二维码，如果您看到此段话代表二维码有效！",
+        props: {
+          width: 150,
+        },
+      },
+      {
+        type: "table",
+        data: [
+          {
+            label: "测试标题",
+            value: "测试内容",
+          },
+        ],
+        props: {
+          hideHeader: true,
+          header: [
+            {
+              dataIndex: "label",
+              cols: 8,
+              align: "left",
+            },
+            {
+              dataIndex: "value",
+              cols: 24,
+              align: "right",
+            },
+          ],
+        },
+      },
+      {
+        type: "line",
+        data: "*",
+      },
+      {
+        type: "text",
+        data: "测试结束",
+      },
+      {
+        type: "line",
+        data: "=",
+      },
+    ],
+    {
+      text: "打印测试",
+    },
+    {
+      flag: "test",
+      width: 32,
+      style: {
+        align: "center",
+      },
+    }
+  );
+};
 const initws = () => {
   const wss = new WebSocketServer({ port: 14529 });
   wss.on("connection", (client) => {
@@ -164,7 +194,11 @@ const initws = () => {
     });
   });
   wss.on("error", (err) => {
-    alert(err.message);
+    dialog.showErrorBox(
+      "启动服务器错误",
+      "请检查是否已经开启了程序，或者端口14529是否被占用！"
+    );
+    app.quit();
   });
 };
 
@@ -196,10 +230,12 @@ const print = async (template, data, options) => {
         data: arraybuffer,
         type: "RAW",
         success: function (jobID) {
-          console.log("sent to printer with ID: " + jobID);
+          status = `打印任务[${jobID}]中`;
+          refreshMenu();
         },
         error: function (err) {
-          console.log(err);
+          status = `打印失败...`;
+          refreshMenu();
         },
       });
     }

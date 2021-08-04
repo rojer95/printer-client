@@ -25,11 +25,13 @@
     "electron-rebuild": "^2.3.5"
   },
   "build": {
+    "productName": "桌面打印服务",
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     },
     "win": {
+      "sign": null,
       "target": [
         {
           "target": "nsis",
